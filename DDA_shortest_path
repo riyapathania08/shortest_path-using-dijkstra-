@@ -1,0 +1,60 @@
+import networkx as nx
+import tkinter as tk
+from tkinter import messagebox
+# Define the graph with nodes and edges (roads with travel times)
+city_graph = nx.DiGraph()
+roads = [('A', 'B', 5), ('A', 'C', 10), ('B', 'C', 3), ('B', 'D', 2),
+         ('C', 'D', 4), ('C', 'E', 6), ('D', 'E', 1), ('A', 'E', 15)]
+city_graph.add_weighted_edges_from(roads)
+# Set up Tkinter application
+class PathFinderApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Dijkstra Path Finder")
+        self.canvas = tk.Canvas(root, width=600, height=400, bg='white')
+        self.canvas.pack()
+
+        # Draw the graph
+        self.node_positions = {'A': (100, 150), 'B': (200, 100), 'C': (300, 150), 'D': (300, 250), 'E': (450, 200)}
+        for (start, end, time) in roads:
+            x1, y1 = self.node_positions[start]
+            x2, y2 = self.node_positions[end]
+            self.canvas.create_line(x1, y1, x2, y2, fill="black")
+            self.canvas.create_text((x1 + x2) / 2, (y1 + y2) / 2, text=str(time), fill="blue")
+        for node, (x, y) in self.node_positions.items():
+            self.canvas.create_oval(x - 10, y - 10, x + 10, y + 10, fill="lightblue")
+            self.canvas.create_text(x, y, text=node, font=("Arial", 12, "bold"))
+
+        # UI for start and end nodes
+        tk.Label(root, text="Start Node:").pack(side=tk.LEFT)
+        self.start_entry = tk.Entry(root, width=5)
+        self.start_entry.pack(side=tk.LEFT)
+
+        tk.Label(root, text="End Node:").pack(side=tk.LEFT)
+        self.end_entry = tk.Entry(root, width=5)
+        self.end_entry.pack(side=tk.LEFT)
+
+        tk.Button(root, text="Find Shortest Path", command=self.find_path).pack(side=tk.LEFT)
+
+    def find_path(self):
+        start, end = self.start_entry.get().strip().upper(), self.end_entry.get().strip().upper()
+        if start not in city_graph or end not in city_graph:
+            messagebox.showerror("Error", "Invalid start or end node.")
+            return
+
+        try:
+            path = nx.shortest_path(city_graph, source=start, target=end, weight='weight')
+            length = nx.shortest_path_length(city_graph, source=start, target=end, weight='weight')
+            messagebox.showinfo("Result", f"Shortest path: {' -> '.join(path)}\nTravel time: {length} min")
+            self.canvas.delete("path")
+            for i in range(len(path) - 1):
+                x1, y1 = self.node_positions[path[i]]
+                x2, y2 = self.node_positions[path[i + 1]]
+                self.canvas.create_line(x1, y1, x2, y2, fill="red", width=2, tags="path")
+        except nx.NetworkXNoPath:
+            messagebox.showinfo("Result", f"No path found from {start} to {end}.")
+
+# Run the application
+root = tk.Tk()
+app = PathFinderApp(root)
+root.mainloop()
